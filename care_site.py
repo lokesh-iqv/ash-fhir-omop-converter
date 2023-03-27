@@ -1,6 +1,7 @@
 # %%
 import json
 import pandas as pd
+import glob
 
 # %%
 iterateItem = []
@@ -11,10 +12,12 @@ care_site_data = []
 %cd "C:\Users\u1151468\Downloads\synthea_sample_data_fhir_r4_sep2019\fhir\"
 
 # %%
-json_data = pd.read_json("Aaron697_Brekke496_2fa15bc7-8866-461a-9000-f739e425860a.json")
-df_concept = pd.read_csv('concept.csv')
-df_location = pd.read_csv('location.csv')
-df_location = df_location.astype(str)
+all_files = glob.glob("*.json")
+
+# %%
+json_data = pd.DataFrame()
+for count,ele in enumerate(all_files,len(all_files)):
+    json_data = pd.concat([json_data, pd.read_json(ele)])
 
 # %%
 for item in json_data["entry"]:
@@ -22,7 +25,11 @@ for item in json_data["entry"]:
         iterateItem.append(item['resource'])
 
 # %%
+df_concept = pd.read_csv('concept.csv')
+df_location = pd.read_csv('fhir_omop_location.csv')
+df_location = df_location.astype(str)
 
+# %%
 for item in iterateItem:
     care_site_data.append({'care_site_id' : item['id'],
 	'care_site_name' : item['name'],
@@ -32,6 +39,7 @@ for item in iterateItem:
     'postalCode' : item['address'][0]['postalCode'],
     'country' : item['address'][0]['country']})
 
+# %%
 df = pd.DataFrame(care_site_data)
 
 # %%
