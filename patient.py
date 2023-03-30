@@ -1,6 +1,7 @@
 # %%
 import json
 import pandas as pd
+import glob
 
 # %%
 iterateItem = []
@@ -11,14 +12,12 @@ patient_data = []
 %cd "C:\Users\u1151468\Downloads\synthea_sample_data_fhir_r4_sep2019\fhir\"
 
 # %%
-json_data = pd.read_json("Aaron697_Brekke496_2fa15bc7-8866-461a-9000-f739e425860a.json")
-df_concept = pd.read_csv('concept.csv')
-df_location = pd.read_csv('location.csv')
-df_location = df_location.astype(str)
+all_files = glob.glob("*.json")
 
 # %%
-for item in iterateItem:
-    print(item)
+json_data = pd.DataFrame()
+for count,ele in enumerate(all_files,len(all_files)):
+    json_data = pd.concat([json_data, pd.read_json(ele)])
 
 # %%
 for item in json_data["entry"]:
@@ -26,8 +25,16 @@ for item in json_data["entry"]:
         iterateItem.append(item['resource'])
 
 # %%
+df_concept = pd.read_csv('concept.csv')
+df_location = pd.read_csv('fhir_omop_location.csv')
+df_location = df_location.astype(str)
 
+# %%
 for item in iterateItem:
+    if 'postalCode' in item['address'][0]:
+        value = item['address'][0]['postalCode']
+    else:
+        value = 'NA'
     patient_data.append({'person_id' : item['id'],
 	'gender_concept_id' : item['gender'],
     'year_of_birth' : item['birthDate'].split('-')[0],
@@ -35,7 +42,7 @@ for item in iterateItem:
     'day_of_birth' : item['birthDate'].split('-')[2],
     'city' : item['address'][0]['city'],
     'state' : item['address'][0]['state'],
-    'postalCode' : item['address'][0]['postalCode'],
+    'postalCode' : value,
     'country' : item['address'][0]['country'],
     'race_source_value' : item['extension'][0]['extension'][0]['valueCoding']['display'],
     'race_source_concept_id' : item['extension'][0]['extension'][0]['valueCoding']['code'],
@@ -43,6 +50,17 @@ for item in iterateItem:
     'ethnicity_source_concept_id' : item['extension'][1]['extension'][0]['valueCoding']['code']
     })
 
+
+# %%
 df = pd.DataFrame(patient_data)
+
+# %%
+df = pd.merge(df, df_location, how='left', left_on=['city','state','postalCode','country'], right_on=['city','state','zip','county'])
+
+# %%
+df = df[['person_id', 'gender_concept_id','year_of_birth','month_of_birth','day_of_birth','location_id','race_source_value','race_source_concept_id','ethnicity_source_value','ethnicity_source_concept_id']]
+
+# %%
+df
 
 
